@@ -1,54 +1,8 @@
 #!/usr/bin/env python
 # Spaggiari Scanner
-# Developed by acidvegas in Python 3
+# Developed by acidvegas in Python
 # https://github.com/acidvegas/spaggiari
 # spaggiari.py
-
-'''
-ISC License
-
-Copyright (c) 2016, acidvegas (https://github.com/acidvegas/)
-
-Permission to use, copy, modify, and/or distribute this software for any
-purpose with or without fee is hereby granted, provided that the above
-copyright notice and this permission notice appear in all copies.
-
-THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
-MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-'''
-
-'''
-'sans armes, ni haine, ni violence'
-
-Requirments:
- - Paramiko Library (http://www.paramiko.org/)
-
-Usage: spaggiari.py [OPTIONS] [SCAN]
-    OPTIONS
-        -d                 | Enable deep scanning. (only used with -t)
-        -f                 | Enable fast scanning. (checks root:root only)
-        -o <path>          | Save output from scan(s) to file.
-    SCAN
-        -l <path>          | Scan a list of ip addresses from file.
-        -x                 | Scan random ip addresses. (does not stop)
-        -r <class> <range> | Scan a range of ip addresses.
-        -r <class> random  | scan a random range of ip addresses.
-        -t <ip>            | scan a target ip address.
-
-Deep scanning uses a larger list of combos to bruteforce with.
-The <class> can be b or c. The <range> is the ip address range prefix to scan.
-
-Examples:
-    spaggiari.py -r b 192.168   (Scans the range 192.168.0.0-192.168.255.255)
-    spaggiari.py -r c 192.168.1 (Scans the range 192.168.1.0-192.168.1.255)
-    spaggiari.py -r b random    (Scans the range ?.?.0.0-?.?.255.255)
-    spaggiari.py -r c random    (Scans the range ?.?.?.0-?.?.?.255)
-'''
 
 import argparse
 import logging
@@ -65,8 +19,8 @@ from collections import OrderedDict
 max_threads     = 100
 throttle        = 20
 timeout_breaker = 5
-timeout_port    = 5
-timeout_ssh     = 15.0
+timeout_port    = 10
+timeout_ssh     = 10
 
 # SSH Login Combos
 combos = OrderedDict([
@@ -155,7 +109,7 @@ def random_scan():
     while True:
         ip = (random_ip(),)
         if not check_range(ip):
-            threading.Thread(target=ssh_bruteforce, args=(ip[0])).start()
+            threading.Thread(target=ssh_bruteforce, args=(ip[0],)).start()
         while threading.activeCount() >= max_threads:
             time.sleep(1)
 

