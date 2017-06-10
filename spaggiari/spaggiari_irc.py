@@ -33,7 +33,7 @@ timeout_ssh     = 10
 # SSH Login Combos
 combos = OrderedDict([
     ('root',  ('root','toor','admin','changeme','pass','password','1234','12345','123456')),
-    ('admin', ('1234','12345','123456','4321','9999','abc123','admin','changeme','admin123','password'))
+    ('admin', ('1234','12345','123456','4321','9999','abc123','admin','changeme','admin123','password')),
     ('root',      ('alien','alpine','calvin','kn1TG7psLu','logapp','openelec','pixmet2003','raspberrypi','rasplex','rootme','soho','TANDBERG','trendimsa1.0')),
     ('admin',     ('aerohive','kn1TG7psLu','TANDBERG')),
     ('alien',     'alien'),
